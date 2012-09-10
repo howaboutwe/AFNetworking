@@ -71,10 +71,20 @@
                        success:(void (^)(NSURLRequest *request, NSHTTPURLResponse *response, UIImage *image))success
                        failure:(void (^)(NSURLRequest *request, NSHTTPURLResponse *response, NSError *error))failure;
 
+- (void)setImageWithURLRequest:(NSURLRequest *)urlRequest
+          cachedPlaceholderURL:(NSURL *)url
+                       success:(void (^)(NSURLRequest *request, NSHTTPURLResponse *response, UIImage *image))success
+                       failure:(void (^)(NSURLRequest *request, NSHTTPURLResponse *response, NSError *error))failure;
+
 /**
  Cancels any executing image request operation for the receiver, if one exists.
  */
 - (void)cancelImageRequestOperation;
+
+/**
+ Creates an enqueues an image request operation, does nothing upon completion.
+ */
++ (void)cacheImageWithURL:(NSURL *)url;
 
 @end
 

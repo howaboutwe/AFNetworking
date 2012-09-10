@@ -152,9 +152,32 @@ static char kAFImageRequestOperationObjectKey;
     }
 }
 
+- (void)setImageWithURLRequest:(NSURLRequest *)urlRequest
+          cachedPlaceholderURL:(NSURL *)url
+                       success:(void (^)(NSURLRequest *request, NSHTTPURLResponse *response, UIImage *image))success
+                       failure:(void (^)(NSURLRequest *request, NSHTTPURLResponse *response, NSError *error))failure
+{
+    NSURLRequest *req = [[NSURLRequest alloc] initWithURL:url];
+    UIImage *cachedImage = [[[self class] af_sharedImageCache] cachedImageForRequest:req];
+    [self setImageWithURLRequest:urlRequest placeholderImage:cachedImage success:success failure:failure];
+    [req release];
+}
+
 - (void)cancelImageRequestOperation {
     [self.af_imageRequestOperation cancel];
     self.af_imageRequestOperation = nil;
+}
+
++ (void)cacheImageWithURL:(NSURL *)url {
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:30.0];
+    [request setHTTPShouldHandleCookies:NO];
+    [request setHTTPShouldUsePipelining:YES];
+    
+    AFImageRequestOperation *requestOperation = [[[AFImageRequestOperation alloc] initWithRequest:request] autorelease];
+    [requestOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+        [[[self class] af_sharedImageCache] cacheImage:responseObject forRequest:request];
+    }
+    failure:^(AFHTTPRequestOperation *operation, NSError *error) {}];
 }
 
 @end
