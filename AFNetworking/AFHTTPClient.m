@@ -587,56 +587,66 @@ static void AFNetworkReachabilityReleaseCallback(const void *info) {}
 #pragma mark -
 
 - (AFHTTPRequestOperation *)getPath:(NSString *)path
-     parameters:(NSDictionary *)parameters 
-        success:(void (^)(AFHTTPRequestOperation *operation, id responseObject))success
-        failure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failure
+                         parameters:(NSDictionary *)parameters
+                           priority:(NSOperationQueuePriority)priority
+                            success:(void (^)(AFHTTPRequestOperation *operation, id responseObject))success
+                            failure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failure
 {
 	NSURLRequest *request = [self requestWithMethod:@"GET" path:path parameters:parameters];
     AFHTTPRequestOperation *operation = [self HTTPRequestOperationWithRequest:request success:success failure:failure];
+    operation.queuePriority = priority;
     [self enqueueHTTPRequestOperation:operation];
     return operation;
 }
 
 - (AFHTTPRequestOperation *)postPath:(NSString *)path
-      parameters:(NSDictionary *)parameters 
-         success:(void (^)(AFHTTPRequestOperation *operation, id responseObject))success
-         failure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failure
+                          parameters:(NSDictionary *)parameters
+                            priority:(NSOperationQueuePriority)priority
+                             success:(void (^)(AFHTTPRequestOperation *operation, id responseObject))success
+                             failure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failure
 {
 	NSURLRequest *request = [self requestWithMethod:@"POST" path:path parameters:parameters];
 	AFHTTPRequestOperation *operation = [self HTTPRequestOperationWithRequest:request success:success failure:failure];
+    operation.queuePriority = priority;
     [self enqueueHTTPRequestOperation:operation];
     return operation;
 }
 
 - (AFHTTPRequestOperation *)putPath:(NSString *)path
-     parameters:(NSDictionary *)parameters 
-        success:(void (^)(AFHTTPRequestOperation *operation, id responseObject))success
-        failure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failure
+                         parameters:(NSDictionary *)parameters
+                           priority:(NSOperationQueuePriority)priority
+                            success:(void (^)(AFHTTPRequestOperation *operation, id responseObject))success
+                            failure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failure
 {
 	NSURLRequest *request = [self requestWithMethod:@"PUT" path:path parameters:parameters];
 	AFHTTPRequestOperation *operation = [self HTTPRequestOperationWithRequest:request success:success failure:failure];
+    operation.queuePriority = priority;
     [self enqueueHTTPRequestOperation:operation];
     return operation;
 }
 
 - (AFHTTPRequestOperation *)deletePath:(NSString *)path
-        parameters:(NSDictionary *)parameters 
-           success:(void (^)(AFHTTPRequestOperation *operation, id responseObject))success
-           failure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failure
+                            parameters:(NSDictionary *)parameters
+                              priority:(NSOperationQueuePriority)priority
+                               success:(void (^)(AFHTTPRequestOperation *operation, id responseObject))success
+                               failure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failure
 {
 	NSURLRequest *request = [self requestWithMethod:@"DELETE" path:path parameters:parameters];
 	AFHTTPRequestOperation *operation = [self HTTPRequestOperationWithRequest:request success:success failure:failure];
+    operation.queuePriority = priority;
     [self enqueueHTTPRequestOperation:operation];
     return operation;
 }
 
 - (AFHTTPRequestOperation *)patchPath:(NSString *)path
-       parameters:(NSDictionary *)parameters 
-          success:(void (^)(AFHTTPRequestOperation *operation, id responseObject))success
-          failure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failure
+                           parameters:(NSDictionary *)parameters
+                             priority:(NSOperationQueuePriority)priority
+                              success:(void (^)(AFHTTPRequestOperation *operation, id responseObject))success
+                              failure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failure
 {
     NSURLRequest *request = [self requestWithMethod:@"PATCH" path:path parameters:parameters];
 	AFHTTPRequestOperation *operation = [self HTTPRequestOperationWithRequest:request success:success failure:failure];
+    operation.queuePriority = priority;
     [self enqueueHTTPRequestOperation:operation];
     return operation;
 }
