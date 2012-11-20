@@ -25,15 +25,9 @@
 
 // Workaround for change in imp_implementationWithBlock() with Xcode 4.5
 #if defined(__IPHONE_6_0) || defined(__MAC_10_8)
-#define AF_CAST_TO_BLOCK id
+    #define AF_CAST_TO_BLOCK id
 #else
-#define AF_CAST_TO_BLOCK __bridge void *
-#endif
-
-// Workaround for management of dispatch_retain() / dispatch_release() by ARC with iOS 6 / Mac OS X 10.8
-#if (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && (!defined(__IPHONE_6_0) || __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_6_0)) || \
-    (defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && (!defined(__MAC_10_8) || __MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_8))
-#define AF_DISPATCH_RETAIN_RELEASE 1
+    #define AF_CAST_TO_BLOCK __bridge void *
 #endif
 
 NSSet * AFContentTypesFromHTTPHeader(NSString *string) {
@@ -58,6 +52,14 @@ NSSet * AFContentTypesFromHTTPHeader(NSString *string) {
     }];
 
     return [NSSet setWithSet:mutableContentTypes];
+}
+
+static void AFGetMediaTypeAndSubtypeWithString(NSString *string, NSString **type, NSString **subtype) {
+    NSScanner *scanner = [NSScanner scannerWithString:string];
+    [scanner setCharactersToBeSkipped:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    [scanner scanUpToString:@"/" intoString:type];
+    [scanner scanString:@"/" intoString:nil];
+    [scanner scanUpToString:@";" intoString:subtype];
 }
 
 static NSString * AFStringFromIndexSet(NSIndexSet *indexSet) {
@@ -102,12 +104,14 @@ static void AFSwizzleClassMethodWithClassAndSelectorUsingBlock(Class klass, SEL 
 @property (readwrite, nonatomic, strong) NSURLRequest *request;
 @property (readwrite, nonatomic, strong) NSHTTPURLResponse *response;
 @property (readwrite, nonatomic, strong) NSError *HTTPError;
+@property (readwrite, nonatomic, copy) NSString *HTTPResponseString;
 @property (assign) long long totalContentLength;
 @property (assign) long long offsetContentLength;
 @end
 
 @implementation AFHTTPRequestOperation
 @synthesize HTTPError = _HTTPError;
+@synthesize HTTPResponseString = _HTTPResponseString;
 @synthesize successCallbackQueue = _successCallbackQueue;
 @synthesize failureCallbackQueue = _failureCallbackQueue;
 @synthesize totalContentLength = _totalContentLength;
@@ -117,14 +121,14 @@ static void AFSwizzleClassMethodWithClassAndSelectorUsingBlock(Class klass, SEL 
 
 - (void)dealloc {
     if (_successCallbackQueue) {
-#if AF_DISPATCH_RETAIN_RELEASE
+#if !OS_OBJECT_USE_OBJC
         dispatch_release(_successCallbackQueue);
 #endif
         _successCallbackQueue = NULL;
     }
     
     if (_failureCallbackQueue) {
-#if AF_DISPATCH_RETAIN_RELEASE
+#if !OS_OBJECT_USE_OBJC
         dispatch_release(_failureCallbackQueue);
 #endif
         _failureCallbackQueue = NULL;
@@ -132,7 +136,7 @@ static void AFSwizzleClassMethodWithClassAndSelectorUsingBlock(Class klass, SEL 
 }
 
 - (NSError *)error {
-    if (self.response && !self.HTTPError) {
+    if (!self.HTTPError && self.response) {
         if (![self hasAcceptableStatusCode] || ![self hasAcceptableContentType]) {
             NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
             [userInfo setValue:self.responseString forKey:NSLocalizedRecoverySuggestionErrorKey];
@@ -142,12 +146,12 @@ static void AFSwizzleClassMethodWithClassAndSelectorUsingBlock(Class klass, SEL 
             
             if (![self hasAcceptableStatusCode]) {
                 NSUInteger statusCode = ([self.response isKindOfClass:[NSHTTPURLResponse class]]) ? (NSUInteger)[self.response statusCode] : 200;
-                [userInfo setValue:[NSString stringWithFormat:NSLocalizedString(@"Expected status code in (%@), got %d", nil), AFStringFromIndexSet([[self class] acceptableStatusCodes]), statusCode] forKey:NSLocalizedDescriptionKey];
+                [userInfo setValue:[NSString stringWithFormat:NSLocalizedStringFromTable(@"Expected status code in (%@), got %d", @"AFNetworking", nil), AFStringFromIndexSet([[self class] acceptableStatusCodes]), statusCode] forKey:NSLocalizedDescriptionKey];
                 self.HTTPError = [[NSError alloc] initWithDomain:AFNetworkingErrorDomain code:NSURLErrorBadServerResponse userInfo:userInfo];
             } else if (![self hasAcceptableContentType]) {
                 // Don't invalidate content type if there is no content
                 if ([self.responseData length] > 0) {
-                    [userInfo setValue:[NSString stringWithFormat:NSLocalizedString(@"Expected content type %@, got %@", nil), [[self class] acceptableContentTypes], [self.response MIMEType]] forKey:NSLocalizedDescriptionKey];
+                    [userInfo setValue:[NSString stringWithFormat:NSLocalizedStringFromTable(@"Expected content type %@, got %@", @"AFNetworking", nil), [[self class] acceptableContentTypes], [self.response MIMEType]] forKey:NSLocalizedDescriptionKey];
                     self.HTTPError = [[NSError alloc] initWithDomain:AFNetworkingErrorDomain code:NSURLErrorCannotDecodeContentData userInfo:userInfo];
                 }
             }
@@ -158,6 +162,25 @@ static void AFSwizzleClassMethodWithClassAndSelectorUsingBlock(Class klass, SEL 
         return self.HTTPError;
     } else {
         return [super error];
+    }
+}
+
+- (NSString *)responseString {
+    // When no explicit charset parameter is provided by the sender, media subtypes of the "text" type are defined to have a default charset value of "ISO-8859-1" when received via HTTP. Data in character sets other than "ISO-8859-1" or its subsets MUST be labeled with an appropriate charset value.
+    // See http://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.4.1
+    if (!self.HTTPResponseString && self.response && !self.response.textEncodingName && self.responseData) {
+        NSString *type = nil;
+        AFGetMediaTypeAndSubtypeWithString([[self.response allHeaderFields] valueForKey:@"Content-Type"], &type, nil);
+
+        if ([type isEqualToString:@"text"]) {
+            self.HTTPResponseString = [[NSString alloc] initWithData:self.responseData encoding:NSISOLatin1StringEncoding];
+        }
+    }
+
+    if (self.HTTPResponseString) {
+        return self.HTTPResponseString;
+    } else {
+        return [super responseString];
     }
 }
 
@@ -193,7 +216,6 @@ static void AFSwizzleClassMethodWithClassAndSelectorUsingBlock(Class klass, SEL 
 		return NO;
 	}
     
-    // According to RFC 2616:
     // Any HTTP/1.1 message containing an entity-body SHOULD include a Content-Type header field defining the media type of that body. If and only if the media type is not given by a Content-Type field, the recipient MAY attempt to guess the media type via inspection of its content and/or the name extension(s) of the URI used to identify the resource. If the media type remains unknown, the recipient SHOULD treat it as type "application/octet-stream".
     // See http://www.w3.org/Protocols/rfc2616/rfc2616-sec7.html
     NSString *contentType = [self.response MIMEType];
@@ -207,14 +229,14 @@ static void AFSwizzleClassMethodWithClassAndSelectorUsingBlock(Class klass, SEL 
 - (void)setSuccessCallbackQueue:(dispatch_queue_t)successCallbackQueue {
     if (successCallbackQueue != _successCallbackQueue) {
         if (_successCallbackQueue) {
-#if AF_DISPATCH_RETAIN_RELEASE
+#if !OS_OBJECT_USE_OBJC
             dispatch_release(_successCallbackQueue);
 #endif
             _successCallbackQueue = NULL;
         }
 
         if (successCallbackQueue) {
-#if AF_DISPATCH_RETAIN_RELEASE
+#if !OS_OBJECT_USE_OBJC
             dispatch_retain(successCallbackQueue);
 #endif
             _successCallbackQueue = successCallbackQueue;
@@ -225,14 +247,14 @@ static void AFSwizzleClassMethodWithClassAndSelectorUsingBlock(Class klass, SEL 
 - (void)setFailureCallbackQueue:(dispatch_queue_t)failureCallbackQueue {
     if (failureCallbackQueue != _failureCallbackQueue) {
         if (_failureCallbackQueue) {
-#if AF_DISPATCH_RETAIN_RELEASE
+#if !OS_OBJECT_USE_OBJC
             dispatch_release(_failureCallbackQueue);
 #endif
             _failureCallbackQueue = NULL;
         }
         
         if (failureCallbackQueue) {
-#if AF_DISPATCH_RETAIN_RELEASE
+#if !OS_OBJECT_USE_OBJC
             dispatch_retain(failureCallbackQueue);
 #endif
             _failureCallbackQueue = failureCallbackQueue;
@@ -243,10 +265,10 @@ static void AFSwizzleClassMethodWithClassAndSelectorUsingBlock(Class klass, SEL 
 - (void)setCompletionBlockWithSuccess:(void (^)(AFHTTPRequestOperation *operation, id responseObject))success
                               failure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failure
 {
-    // completion block is manually nilled out in AFURLConnectionOperation to break the retain cycle.
+    // completionBlock is manually nilled out in AFURLConnectionOperation to break the retain cycle.
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-retain-cycles"
-    self.completionBlock = ^ {
+    self.completionBlock = ^{
         if ([self isCancelled]) {
             return;
         }
