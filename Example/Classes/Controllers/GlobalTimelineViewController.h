@@ -1,4 +1,4 @@
-// Tweet.h
+// GlobalTimelineViewController.h
 //
 // Copyright (c) 2012 Mattt Thompson (http://mattt.me/)
 // 
@@ -20,19 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 
-@class User;
-
-@interface Tweet : NSObject
-
-@property (readonly, assign) NSUInteger tweetID;
-@property (readonly, strong) NSString *text;
-
-@property (readonly, strong) User *user;
-
-- (id)initWithAttributes:(NSDictionary *)attributes;
-
-+ (void)publicTimelineTweetsWithBlock:(void (^)(NSArray *tweets, NSError *error))block;
+@interface GlobalTimelineViewController : UITableViewController
 
 @end
