@@ -23,6 +23,8 @@
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
 
+#define kEnableImageCache NO
+
 #if __IPHONE_OS_VERSION_MIN_REQUIRED
 #import "UIImageView+AFNetworking.h"
 
@@ -112,8 +114,12 @@ static char kAFImageRequestOperationObjectKey;
 {
     [self cancelImageRequestOperation];
     
-    UIImage *cachedImage = [[[self class] af_sharedImageCache] cachedImageForRequest:urlRequest];
-    if (cachedImage) {
+    
+    BOOL shouldCacheImages = kEnableImageCache;
+    UIImage *cachedImage = nil;
+    if (shouldCacheImages)
+        cachedImage = [[[self class] af_sharedImageCache] cachedImageForRequest:urlRequest];
+    if (shouldCacheImages && cachedImage) {
         self.image = cachedImage;
         self.af_imageRequestOperation = nil;
         
@@ -134,9 +140,8 @@ static char kAFImageRequestOperationObjectKey;
                 success(operation.request, operation.response, responseObject);
             }
 
-            [[[self class] af_sharedImageCache] cacheImage:responseObject forRequest:urlRequest];
-            
-
+            if (shouldCacheImages)
+                [[[self class] af_sharedImageCache] cacheImage:responseObject forRequest:urlRequest];
         } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
             if ([[urlRequest URL] isEqual:[[self.af_imageRequestOperation request] URL]]) {
                 self.af_imageRequestOperation = nil;
@@ -160,8 +165,11 @@ static char kAFImageRequestOperationObjectKey;
                        failure:(void (^)(NSURLRequest *request, NSHTTPURLResponse *response, NSError *error))failure
 {
     NSURLRequest *req = [[NSURLRequest alloc] initWithURL:url];
-    UIImage *cachedImage = [[[self class] af_sharedImageCache] cachedImageForRequest:req];
-    [self setImageWithURLRequest:urlRequest placeholderImage:cachedImage success:success failure:failure];
+    BOOL shouldCacheImages = kEnableImageCache;
+    if (shouldCacheImages) {
+        UIImage *cachedImage = [[[self class] af_sharedImageCache] cachedImageForRequest:req];
+        [self setImageWithURLRequest:urlRequest placeholderImage:cachedImage success:success failure:failure];
+    }
 }
 
 - (void)cancelImageRequestOperation {
