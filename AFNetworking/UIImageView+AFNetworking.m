@@ -23,7 +23,7 @@
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
 
-#define kEnableImageCache NO
+#define kEnableImageCache YES
 
 #if __IPHONE_OS_VERSION_MIN_REQUIRED
 #import "UIImageView+AFNetworking.h"
