@@ -168,10 +168,11 @@ static char kAFImageRequestOperationObjectKey;
 {
     NSURLRequest *req = [[NSURLRequest alloc] initWithURL:url];
     BOOL shouldCacheImages = kEnableImageCache;
+    UIImage *cachedImage = nil;
     if (shouldCacheImages) {
-        UIImage *cachedImage = [[[self class] af_sharedImageCache] cachedImageForRequest:req];
-        [self setImageWithURLRequest:urlRequest placeholderImage:cachedImage success:success failure:failure];
+        cachedImage = [[[self class] af_sharedImageCache] cachedImageForRequest:req];
     }
+    [self setImageWithURLRequest:urlRequest placeholderImage:cachedImage success:success failure:failure];
 }
 
 - (void)cancelImageRequestOperation {
