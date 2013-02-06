@@ -23,16 +23,18 @@
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
 
-#define kEnableImageCache NO
+#define kEnableImageCache ([[[[UIDevice currentDevice].systemVersion componentsSeparatedByString:@"."] objectAtIndex:0] intValue] < 6)
 
 #if __IPHONE_OS_VERSION_MIN_REQUIRED
 #import "UIImageView+AFNetworking.h"
 
+/*
 @interface AFImageCache : NSCache
 - (UIImage *)cachedImageForRequest:(NSURLRequest *)request;
 - (void)cacheImage:(UIImage *)image
         forRequest:(NSURLRequest *)request;
 @end
+ */
 
 #pragma mark -
 
@@ -202,6 +204,24 @@ static inline NSString * AFImageCacheKeyFromURLRequest(NSURLRequest *request) {
 
 @implementation AFImageCache
 
+- (UIImage *)cachedImageForURL:(NSURL*)url {
+    /*
+    switch ([request cachePolicy]) {
+        case NSURLRequestReloadIgnoringCacheData:
+        case NSURLRequestReloadIgnoringLocalAndRemoteCacheData:
+            return nil;
+        default:
+            break;
+    }
+     */
+    
+	return [self objectForKey:url.absoluteString];
+}
+
+- (void)cacheImage:(UIImage *)image forURL:(NSURL *)url {
+    if (image && url) [self setObject:image forKey:url.absoluteString];
+}
+
 - (UIImage *)cachedImageForRequest:(NSURLRequest *)request {
     switch ([request cachePolicy]) {
         case NSURLRequestReloadIgnoringCacheData:
@@ -214,9 +234,8 @@ static inline NSString * AFImageCacheKeyFromURLRequest(NSURLRequest *request) {
 	return [self objectForKey:AFImageCacheKeyFromURLRequest(request)];
 }
 
-- (void)cacheImage:(UIImage *)image
-        forRequest:(NSURLRequest *)request
-{
+
+- (void)cacheImage:(UIImage *)image forRequest:(NSURLRequest *)request {
     if (image && request) {
         [self setObject:image forKey:AFImageCacheKeyFromURLRequest(request)];
     }
