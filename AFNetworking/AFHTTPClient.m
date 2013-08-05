@@ -231,7 +231,7 @@ NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value) {
 	self.defaultHeaders = [NSMutableDictionary dictionary];
 	
     // Accept-Language HTTP Header; see http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.4
-    NSString *preferredLanguageCodes = [[NSLocale preferredLanguages] componentsJoinedByString:@", "];
+    NSString *preferredLanguageCodes = [[self preferredLanguages] componentsJoinedByString:@", "];
     [self setDefaultHeader:@"Accept-Language" value:[NSString stringWithFormat:@"%@, en-us;q=0.8", preferredLanguageCodes]];
     
 #if __IPHONE_OS_VERSION_MIN_REQUIRED
@@ -380,6 +380,19 @@ static void AFNetworkReachabilityReleaseCallback(const void *info) {}
 }
 
 #pragma mark -
+
+- (NSArray *)preferredLanguages
+{
+    NSArray *langs = [NSLocale preferredLanguages];
+    NSMutableArray *filteredLangs = [[NSMutableArray alloc] init];
+    for (NSString *lang in langs) {
+        NSString *filteredName = lang;
+        if ([lang isEqualToString:@"pt"])
+            filteredName = @"pt-BR";
+        [filteredLangs addObject:filteredName];
+    }
+    return filteredLangs;
+}
 
 - (NSString *)defaultValueForHeader:(NSString *)header {
 	return [self.defaultHeaders valueForKey:header];
