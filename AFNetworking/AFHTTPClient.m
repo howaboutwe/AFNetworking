@@ -249,6 +249,7 @@ NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value) {
     NSString *preferredLanguageCodes = [[self preferredLanguages] componentsJoinedByString:@", "];
     [self setDefaultHeader:@"Accept-Language" value:[NSString stringWithFormat:@"%@, en-us;q=0.8", preferredLanguageCodes]];
     
+    NSString *userAgent = nil;
 #if __IPHONE_OS_VERSION_MIN_REQUIRED
     // User-Agent Header; see http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.43
     userAgent = [NSString stringWithFormat:@"%@/%@ (%@; iOS %@; Scale/%0.2f)", [[[NSBundle mainBundle] infoDictionary] objectForKey:(__bridge NSString *)kCFBundleExecutableKey] ?: [[[NSBundle mainBundle] infoDictionary] objectForKey:(__bridge NSString *)kCFBundleIdentifierKey], (__bridge id)CFBundleGetValueForInfoDictionaryKey(CFBundleGetMainBundle(), kCFBundleVersionKey) ?: [[[NSBundle mainBundle] infoDictionary] objectForKey:(__bridge NSString *)kCFBundleVersionKey], [[UIDevice currentDevice] model], [[UIDevice currentDevice] systemVersion], ([[UIScreen mainScreen] respondsToSelector:@selector(scale)] ? [[UIScreen mainScreen] scale] : 1.0f)];
@@ -1052,20 +1053,6 @@ NSTimeInterval const kAFUploadStream3GSuggestedDelay = 0.2;
     return self;
 }
 
--(id)copyWithZone:(NSZone *)zone {
-    AFMultipartBodyStream *bodyStreamCopy = [[[self class] allocWithZone:zone] initWithStringEncoding:self.stringEncoding];
-
-    for (AFHTTPBodyPart *bodyPart in self.HTTPBodyParts)
-    {
-        AFHTTPBodyPart *bodyPartCopy = [bodyPart copy];
-        [bodyStreamCopy appendHTTPBodyPart:bodyPartCopy];
-    }
-
-    [bodyStreamCopy setInitialAndFinalBoundaries];
-
-    return bodyStreamCopy;
-}
-
 - (void)setInitialAndFinalBoundaries {
     if ([self.HTTPBodyParts count] > 0) {
         for (AFHTTPBodyPart *bodyPart in self.HTTPBodyParts) {
@@ -1223,8 +1210,6 @@ typedef enum {
 @synthesize headers = _headers;
 @synthesize body = _body;
 @synthesize bodyContentLength = _bodyContentLength;
-@synthesize inputData = _inputData;
-@synthesize inputURL = _inputURL;
 @synthesize hasInitialBoundary = _hasInitialBoundary;
 @synthesize hasFinalBoundary = _hasFinalBoundary;
 
@@ -1237,18 +1222,6 @@ typedef enum {
     [self transitionToNextPhase];
 
     return self;
-}
-
-- (id)copyWithZone:(NSZone *)zone {
-    AFHTTPBodyPart *bodyPartCopy = [[[self class] allocWithZone:zone] init];
-
-    bodyPartCopy.stringEncoding = self.stringEncoding;
-    bodyPartCopy.headers = self.headers;
-    bodyPartCopy.bodyContentLength = self.bodyContentLength;
-    bodyPartCopy.inputData = self.inputData;
-    bodyPartCopy.inputURL = self.inputURL;
-
-    return bodyPartCopy;
 }
 
 - (void)dealloc {
