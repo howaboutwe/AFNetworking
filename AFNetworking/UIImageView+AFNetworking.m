@@ -138,8 +138,6 @@ static char kAFImageRequestOperationObjectKey;
             else if (success) {
                 success(operation.request, operation.response, responseObject);
             }
-            
-            [[[self class] af_sharedImageCache] cacheImage:responseObject forRequest:urlRequest];
         } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
             if ([urlRequest isEqual:[self.af_imageRequestOperation request]]) {
                 if (self.af_imageRequestOperation == operation) {
