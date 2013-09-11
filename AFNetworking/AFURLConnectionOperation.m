@@ -178,7 +178,7 @@ static BOOL AFSecKeyIsEqualToKey(SecKeyRef key1, SecKeyRef key2) {
 + (void)networkRequestThreadEntryPoint:(id __unused)object {
     @autoreleasepool {
         [[NSThread currentThread] setName:@"AFNetworking"];
-
+        
         NSRunLoop *runLoop = [NSRunLoop currentRunLoop];
         [runLoop addPort:[NSMachPort port] forMode:NSDefaultRunLoopMode];
         [runLoop run];
@@ -246,7 +246,7 @@ static BOOL AFSecKeyIsEqualToKey(SecKeyRef key1, SecKeyRef key2) {
                 }
                 
                 CFRelease(allowedTrust);
-            }          
+            }
             
             CFRelease(policy);
             CFRelease(certificates);
@@ -261,7 +261,7 @@ static BOOL AFSecKeyIsEqualToKey(SecKeyRef key1, SecKeyRef key2) {
 
 - (id)initWithRequest:(NSURLRequest *)urlRequest {
     NSParameterAssert(urlRequest);
-
+    
     self = [super init];
     if (!self) {
 		return nil;
@@ -275,14 +275,14 @@ static BOOL AFSecKeyIsEqualToKey(SecKeyRef key1, SecKeyRef key2) {
     self.request = urlRequest;
     
     self.shouldUseCredentialStorage = YES;
-
-    // #ifdef included for backwards-compatibility 
+    
+    // #ifdef included for backwards-compatibility
 #ifdef _AFNETWORKING_ALLOW_INVALID_SSL_CERTIFICATES_
     self.allowsInvalidSSLCertificate = YES;
 #endif
-
+    
     self.state = AFOperationReadyState;
-
+    
     return self;
 }
 
@@ -336,7 +336,7 @@ static BOOL AFSecKeyIsEqualToKey(SecKeyRef key1, SecKeyRef key2) {
     if (!_outputStream) {
         self.outputStream = [NSOutputStream outputStreamToMemory];
     }
-
+    
     return _outputStream;
 }
 
@@ -611,10 +611,10 @@ willSendRequestForAuthenticationChallenge:(NSURLAuthenticationChallenge *)challe
                     if (status == errSecSuccess) {
                         [trustChain addObject:(__bridge_transfer id)SecTrustCopyPublicKey(trust)];
                     }
-
+                    
                     CFRelease(trust);
                 }
-              
+                
                 CFRelease(certificates);
             }
         }
@@ -783,19 +783,6 @@ didReceiveResponse:(NSURLResponse *)response
     }
 }
 
-- (NSInputStream *)connection:(NSURLConnection *)connection needNewBodyStream:(NSURLRequest *)request
-{
-    NSInputStream *newBodyStream = nil;
-    
-    NSInputStream *bodyStream = request.HTTPBodyStream;
-    if ([bodyStream conformsToProtocol:@protocol(NSCopying)])
-    {
-        newBodyStream = [bodyStream copy];
-    }
-
-    return newBodyStream;
-}
-
 #pragma mark - NSCoding
 
 - (id)initWithCoder:(NSCoder *)aDecoder {
@@ -813,7 +800,7 @@ didReceiveResponse:(NSURLResponse *)response
     self.responseData = [aDecoder decodeObjectForKey:@"responseData"];
     self.totalBytesRead = [[aDecoder decodeObjectForKey:@"totalBytesRead"] longLongValue];
     self.allowsInvalidSSLCertificate = [[aDecoder decodeObjectForKey:@"allowsInvalidSSLCertificate"] boolValue];
-
+    
     return self;
 }
 
